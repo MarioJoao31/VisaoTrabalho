@@ -115,7 +115,7 @@ int main(void) {
 		memcpy(image->data, frame.data, video.width * video.height * 3);
         //teste faz o segment de algumas cores
 		vc_hsv_segmentation(image, image2, 200,220,50,100,50,100);
-        //vc_binary_close(image2,image3,2,5);
+        vc_binary_close(image2,image3,2,5);
         //vc_scale_gray_to_rgb(image3,image4);
         //vc_rgb_gray(image,image2);
         vc_convertToThreeChannels(image2,image3);
