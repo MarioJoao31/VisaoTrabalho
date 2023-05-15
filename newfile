@@ -1,0 +1,136 @@
+int vc_convertToThreeChannels(IVC *graysrc,IVC *graydst) {
+    //verificações
+    if (!graysrc || !graysrc->data || !graydst || !graydst->data) {
+        return -1; // Invalid parameters
+    }
+
+    if (graysrc->channels != 1) {
+        return -2; // Input image should have only one channel
+    }
+
+    if (graydst->channels != 3) {
+        return -3; // Output image should have three channels
+    }
+
+    if (graysrc->width != graydst->width || graysrc->height != graydst->height) {
+        return -4; // Input and output images should have the same size
+    }
+
+    // Copy image header information
+    graydst->data = (unsigned char*) malloc(3 * graysrc->width * graysrc->height * sizeof(unsigned char));
+    graydst->width = graysrc->width;
+    graydst->height = graysrc->height;
+    graydst->channels = 3;
+    graydst->levels = graysrc->levels;
+    graydst->bytesperline = 3 * graysrc->width;
+
+    //BUG: muda as cores se eu passar como paramentro vermelho ele muda para reconhecer azul
+
+    // Copiar os valores de pixel da imagem em escala de cinza para cada um dos três canais da nova imagem
+    for (int i = 0; i < graysrc->height; i++) {
+        for (int j = 0; j < graysrc->width; j++) {
+
+            int idx_grayscale = i * graysrc->bytesperline + j;
+            int color_idx = i * graydst->bytesperline + j * graydst->channels;
+
+            graydst->data[color_idx] = graysrc->data[idx_grayscale];
+            graydst->data[color_idx + 1] = graysrc->data[idx_grayscale];
+            graydst->data[color_idx + 2] = graysrc->data[idx_grayscale];
+        }
+    }
+
+    return 1;
+}
+
+
+//////////////////////////////////////////////
+
+
+//converte uma umagem RGB e segmenta a imagem dependendo dos parametros
+int vc_hsv_segmentation(IVC *src, IVC *dst, int hmin, int hmax, int smin,int smax, int vmin, int vmax){
+//converter de hsv para segmentar
+    unsigned char *datasrc = (unsigned char * ) src->data;
+    int bytesperline_src = src->width * src->channels;
+    int channels_src = src->channels;
+    unsigned char *datadst = (unsigned char * ) dst->data;
+    int bytesperline_dst = dst->width * dst->channels;
+	int channels_dst = dst->channels;
+    int width = src->width;
+    int height = src->height;
+    int x, y;
+	float max,min,hue,sat,valor;
+    long int pos_src, pos_dst;
+    float rf, gf, bf;
+
+	//verificalão de errors
+    if((src->width <= 0 ) || (src->height <= 0) || (src->data == NULL)) return 0;
+    if((src->width != dst->width) || (src->height != dst->height)) return 0;
+    if((src->channels != 3 ) || (dst->channels != 1))return 0 ;
+
+	for(y=0; y<height ; y++){
+        for(x=0; x<width ; x++){
+            pos_src = y * bytesperline_src + x * channels_src;
+            pos_dst = y * bytesperline_dst + x * channels_dst;
+
+            rf = (float) datasrc[pos_src];
+            gf = (float) datasrc[pos_src + 1];
+            bf = (float) datasrc[pos_src + 2];
+
+			//calcular value
+			//find max
+			max = rf;
+			if(gf>max){
+				max = gf;
+			}
+			if(bf>max){
+				max=bf;
+			}
+
+			//find min
+			min = rf;
+			if(gf<min){
+				min = gf;
+			}
+			if(bf<min){
+				min=bf;
+			}
+
+			//calcular value
+			valor = max;
+
+			//calcular saturação
+			if(max==0 || max == min){
+				sat=0;
+				hue=0;
+			}else{
+				sat=(max-min)/valor;
+				//calcular hue
+				// Quando o vermelho é o maior, Hue será um ângulo entre 300 e 360 ou entre 0 e 60
+				if(rf==max && gf>=bf ){
+					hue = 60.0f*(gf-bf)/(max-min);
+				}
+
+				else if(rf==max && bf>gf ){
+					hue = 360+60.0f * (gf - bf) / (max-min);
+				}
+
+				else if(gf==max){
+					hue = 120 + 60.0f * (bf - rf) / (max-min);
+				}
+
+				else{
+					hue = 240 + 60.0f * (rf - gf) / ( max - min);
+				}
+			}
+
+			//verificação para o hue
+			if(hue < hmax && hue >= hmin && (sat * 100) <= smax && (sat * 100) >= smin && valor <= vmax/100.0f * 255 && valor >=vmin/100.0f * 255 )
+				datadst[pos_dst] = 255;
+			else
+				datadst[pos_dst] = 0;
+
+        }
+    }
+	return 1;
+
+}

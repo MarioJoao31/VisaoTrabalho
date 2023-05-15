@@ -1,0 +1,3 @@
+/Users/pinante/Desktop/UNI/2-Ano LESI/2-Semestre/Visao por computadores/TrabalhoGrupoVisao/cmake-build-debug/CMakeFiles/run.dir
+/Users/pinante/Desktop/UNI/2-Ano LESI/2-Semestre/Visao por computadores/TrabalhoGrupoVisao/cmake-build-debug/CMakeFiles/edit_cache.dir
+/Users/pinante/Desktop/UNI/2-Ano LESI/2-Semestre/Visao por computadores/TrabalhoGrupoVisao/cmake-build-debug/CMakeFiles/rebuild_cache.dir
