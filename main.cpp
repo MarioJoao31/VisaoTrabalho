@@ -83,8 +83,14 @@ int main(void) {
  	//TODO: por aqui a criar a imagem para ter mais framerate
 	IVC *image = vc_image_new(video.width, video.height, 3, 255);
     IVC *image2 = vc_image_new(video.width, video.height, 1, 255);
+    IVC *imagetemp = vc_image_new(video.width, video.height, 1, 255);
+    IVC *imagetemp2 = vc_image_new(video.width, video.height, 1, 255);
     IVC *image3 = vc_image_new(video.width, video.height, 3, 255);
     IVC *image4 = vc_image_new(video.width, video.height, 3, 255);
+    int nblobs = 0;
+    OVC *blobs;
+
+    cv::Rect rect(0, 0, 50, 50);
 
     cv::Mat frame;
 	while (key != 'q') {
@@ -113,14 +119,53 @@ int main(void) {
 
 
 		memcpy(image->data, frame.data, video.width * video.height * 3);
+        //converte o frame q esta em bgr para rgb
+        vc_convert_to_rgb(image);
+
         //teste faz o segment de algumas cores
-		vc_hsv_segmentation(image, image2, 200,220,50,100,50,100);
-        vc_binary_close(image2,image3,2,5);
+		vc_hsv_segmentation(image, image2, 0,40,60,100,60,100);
+
         //vc_scale_gray_to_rgb(image3,image4);
         //vc_rgb_gray(image,image2);
-        vc_convertToThreeChannels(image2,image3);
-		memcpy(frame.data, image3->data, video.width * video.height * 3);
+        //vc_binary_close(image2, imagetemp, 2, 3);
 
+
+        //faz o blob labeling
+        blobs = vc_binary_blob_labelling(image2,imagetemp, &nblobs);
+
+        if (blobs != NULL){
+            //da a informação das blobs
+            vc_binary_blob_info(imagetemp,blobs, nblobs);
+
+            for (size_t i = 0; i < nblobs; i++)
+            {
+                if( blobs[i].area > 1000){
+
+                    printf("label %d | area %d \n", blobs[i].label, blobs[i].area);
+
+                    // Draw a rectangle around the object
+                    // and its top left corner...
+                    cv::Point pt1(blobs->xc, blobs->yc);
+                    // and its bottom right corner.
+                    cv::Point pt2(blobs->xc + blobs->width, blobs->yc + blobs->height);
+                    // These two calls...
+                    cv::rectangle(frame, pt1, pt2, cv::Scalar(0, 255, 0),5);
+                }
+
+            }
+
+
+            free(blobs);
+        }
+
+
+        //printf("n de labels: %d \n" , nlabels );
+
+
+
+        //converter no final e amostrar e para dar debug ao segment
+        //vc_convertToThreeChannels(image2,image3);
+		//memcpy(frame.data, image3->data, video.width * video.height * 3);
 
 		/* Exibe a frame */
 		cv::imshow("BIMBOLANDIA", frame);

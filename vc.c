@@ -1644,3 +1644,21 @@ int vc_convertToThreeChannels(IVC* binary_image, IVC* color_image) {
     }
     return 1;
 }
+
+IVC* vc_convert_to_rgb(IVC *image){
+    unsigned char* data = image->data;
+    int width = image->width;
+    int height = image->height;
+    int channels = image->channels;
+    int bytesperline = image->bytesperline;
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            int index = y * bytesperline + x * channels;
+            unsigned char blue = data[index];
+            data[index] = data[index + 2];
+            data[index + 2] = blue;
+        }
+    }
+    return image;
+}

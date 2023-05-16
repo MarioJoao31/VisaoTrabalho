@@ -88,3 +88,6 @@ int vc_gray_histogram_equalization(IVC *src, IVC *dst);
 
 // Detecção de contornos pelos operadores Prewitt
 int vc_gray_edge_prewitt(IVC *src, IVC *dst, float th);
+
+//converter bgr para rgb
+IVC* vc_convert_to_rgb(IVC *src);
