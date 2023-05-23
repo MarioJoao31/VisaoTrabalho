@@ -605,6 +605,9 @@ int vc_hsv_segmentation(IVC *src, IVC *dst, int hmin, int hmax, int smin,int sma
     if((src->width != dst->width) || (src->height != dst->height)) return 0;
     if((src->channels != 3 ) || (dst->channels != 1))return 0 ;
 
+
+
+    // meter em hsv
     for(y=0; y<height ; y++){
         for(x=0; x<width ; x++){
             pos_src = y * bytesperline_src + x * channels_src;
@@ -661,11 +664,21 @@ int vc_hsv_segmentation(IVC *src, IVC *dst, int hmin, int hmax, int smin,int sma
                 }
             }
 
-            //verificação para o hue
-            if(hue <= hmax && hue >= hmin && sat <= smax && sat  >= smin && valor <= vmax/100.0f * 255 && valor >= vmin/100.0f * 255)
-                datadst[pos_dst] = 255;
-            else
-                datadst[pos_dst] = 0;
+            //se o hmin for maior que o hmax  entao hmin ate 360 e de 0 ate hmax
+
+            if(hmin > hmax ){
+                if((hue >= 0 && hue <= hmax || hue <= 360 && hue >= hmin) && sat <= smax && sat  >= smin && valor <= vmax/100.0f * 255 && valor >= vmin/100.0f * 255)
+                    datadst[pos_dst] = 255;
+                else
+                    datadst[pos_dst] = 0;
+            }else{
+                if(hue <= hmax && hue >= hmin && sat <= smax && sat  >= smin && valor <= vmax/100.0f * 255 && valor >= vmin/100.0f * 255)
+                    datadst[pos_dst] = 255;
+                else
+                    datadst[pos_dst] = 0;
+            }
+
+
 
         }
     }
@@ -1196,6 +1209,9 @@ OVC* vc_binary_blob_labelling(IVC *src, IVC *dst, int *nlabels)
 			{
 				if ((datadst[posA] == 0) && (datadst[posB] == 0) && (datadst[posC] == 0) && (datadst[posD] == 0))
 				{
+                    if(label > 254){
+                        return NULL;
+                    }
 					datadst[posX] = label;
 					labeltable[label] = label;
 					label++;
@@ -1222,8 +1238,13 @@ OVC* vc_binary_blob_labelling(IVC *src, IVC *dst, int *nlabels)
 					{
 						if (labeltable[datadst[posA]] != num)
 						{
+
 							for (tmplabel = labeltable[datadst[posA]], a = 1; a<label; a++)
 							{
+
+                                if(a>254){
+                                    return NULL;
+                                }
 								if (labeltable[a] == tmplabel)
 								{
 									labeltable[a] = num;
@@ -1237,6 +1258,9 @@ OVC* vc_binary_blob_labelling(IVC *src, IVC *dst, int *nlabels)
 						{
 							for (tmplabel = labeltable[datadst[posB]], a = 1; a<label; a++)
 							{
+                                if(a>254){
+                                    return NULL;
+                                }
 								if (labeltable[a] == tmplabel)
 								{
 									labeltable[a] = num;
@@ -1250,6 +1274,9 @@ OVC* vc_binary_blob_labelling(IVC *src, IVC *dst, int *nlabels)
 						{
 							for (tmplabel = labeltable[datadst[posC]], a = 1; a<label; a++)
 							{
+                                if(a>254){
+                                    return NULL;
+                                }
 								if (labeltable[a] == tmplabel)
 								{
 									labeltable[a] = num;
@@ -1263,6 +1290,9 @@ OVC* vc_binary_blob_labelling(IVC *src, IVC *dst, int *nlabels)
 						{
 							for (tmplabel = labeltable[datadst[posD]], a = 1; a<label; a++)
 							{
+                                if(a>254){
+                                    return NULL;
+                                }
 								if (labeltable[a] == tmplabel)
 								{
 									labeltable[a] = num;

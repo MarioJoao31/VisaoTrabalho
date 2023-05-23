@@ -82,8 +82,12 @@ int main(void) {
 
  	//TODO: por aqui a criar a imagem para ter mais framerate
 	IVC *image = vc_image_new(video.width, video.height, 3, 255);
-    IVC *image2 = vc_image_new(video.width, video.height, 1, 255);
-    IVC *imagetemp = vc_image_new(video.width, video.height, 1, 255);
+    IVC *imageTempBlue = vc_image_new(video.width, video.height, 1, 255);
+    IVC *imageBlue = vc_image_new(video.width, video.height, 1, 255);
+    IVC *imageRed = vc_image_new(video.width, video.height, 1, 255);
+    IVC *imageGreen = vc_image_new(video.width, video.height, 1, 255);
+    IVC *imageBlobsBlue = vc_image_new(video.width, video.height, 1, 255);
+    IVC *imageBlobsRed = vc_image_new(video.width, video.height, 1, 255);
     IVC *imagetemp2 = vc_image_new(video.width, video.height, 1, 255);
     IVC *image3 = vc_image_new(video.width, video.height, 3, 255);
     IVC *image4 = vc_image_new(video.width, video.height, 3, 255);
@@ -113,58 +117,128 @@ int main(void) {
 		str = std::string("FRAME RATE: ").append(std::to_string(video.fps));
 		cv::putText(frame, str, cv::Point(20, 75), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 0, 0), 2);
 		cv::putText(frame, str, cv::Point(20, 75), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 255, 255), 1);
-		str = std::string("N. DA FRAME: ").append(std::to_string(video.nframe));
-		cv::putText(frame, str, cv::Point(20, 100), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 0, 0), 2);
-		cv::putText(frame, str, cv::Point(20, 100), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 255, 255), 1);
 
 
 		memcpy(image->data, frame.data, video.width * video.height * 3);
         //converte o frame q esta em bgr para rgb
         vc_convert_to_rgb(image);
 
+        /////////////////////AZUL
         //teste faz o segment de algumas cores
-		vc_hsv_segmentation(image, image2, 0,40,60,100,60,100);
-
-        //vc_scale_gray_to_rgb(image3,image4);
-        //vc_rgb_gray(image,image2);
-        //vc_binary_close(image2, imagetemp, 2, 3);
-
-
+		vc_hsv_segmentation(image, imageBlue, 200,240,70,100,70,100);
+        //vc_binary_open(imageTempBlue,imageBlue,7,2);
         //faz o blob labeling
-        blobs = vc_binary_blob_labelling(image2,imagetemp, &nblobs);
-
+        blobs = vc_binary_blob_labelling(imageBlue,imageBlobsBlue, &nblobs);
+        float circularidade = 0.000;
         if (blobs != NULL){
             //da a informação das blobs
-            vc_binary_blob_info(imagetemp,blobs, nblobs);
+            vc_binary_blob_info(imageBlobsBlue,blobs, nblobs);
 
             for (size_t i = 0; i < nblobs; i++)
             {
-                if( blobs[i].area > 1000){
+                if( blobs[i].area > 7000){
 
                     printf("label %d | area %d \n", blobs[i].label, blobs[i].area);
 
+                    str = std::string(" !!! AZUL !!! ");
+                    cv::putText(frame, str, cv::Point(blobs->x, blobs->y - 20), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 0, 0), 2);
+                    cv::putText(frame, str, cv::Point(blobs->x, blobs->y - 20), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 0, 0), 1);
+
+                    //circular ?
+                    circularidade= 4.00 * M_PI * blobs->area/(blobs->perimeter*blobs->perimeter);
+                    printf("circularidade: %f\n", circularidade);
+                    if(circularidade > 0.20){
+                        //TODO: falta fazer a verificação do centro de massa
+                        printf("É UM CIRCULO AZULL!!!\n");
+
+                        int imageCenterX = blobs->width / 2;
+                        int imageCenterY = blobs->height / 2;
+                        printf("xc:%d\n", blobs->xc);
+                        printf("yc:%d\n", blobs->yc);
+                        printf("imageCenterX:%d\n", imageCenterX);
+                        printf("imageCenterY:%d\n", imageCenterY);
+                        /*
+                        int imageCenterX = blobs->width / 2;
+                        if (blobs->xc > imageCenterX) {
+                            printf("Image is to the left\n");
+                        } else if (blobs->xc < imageCenterX) {
+                            printf("Image is to right\n");
+                        } else {
+                            printf("Image is in the center!\n");
+                        }
+                        */
+
+                    }
                     // Draw a rectangle around the object
                     // and its top left corner...
-                    cv::Point pt1(blobs->xc, blobs->yc);
+                    cv::Point pt1(blobs->x, blobs->y);
                     // and its bottom right corner.
-                    cv::Point pt2(blobs->xc + blobs->width, blobs->yc + blobs->height);
+                    cv::Point pt2(blobs->x + blobs->width, blobs->y + blobs->height);
                     // These two calls...
-                    cv::rectangle(frame, pt1, pt2, cv::Scalar(0, 255, 0),5);
+                    cv::rectangle(frame, pt1, pt2, cv::Scalar(255, 0, 0),5);
+
+                    // Draw a rectangle around the center of mass
+                    // and its top left corner...
+                    cv::Point pt3(blobs->xc, blobs->yc);
+                    // and its bottom right corner.
+                    cv::Point pt4(blobs->xc + 5 , blobs->yc + 5);
+                    // These two calls...
+                    cv::rectangle(frame, pt3, pt4, cv::Scalar(255, 0, 0),5);
                 }
-
             }
+            free(blobs);
+        }
+
+        /////////////////////vermelho
+        //teste faz o segment de algumas cores
+        vc_hsv_segmentation(image, imageRed, 345,10,70,100,70,100);
+        //faz o blob labeling
+        blobs = vc_binary_blob_labelling(imageRed,imageBlobsRed, &nblobs);
+        circularidade = 0.00;
+
+        if (blobs != NULL){
+            //da a informação das blobs
+            vc_binary_blob_info(imageBlobsRed,blobs, nblobs);
+
+            for (size_t i = 0; i < nblobs; i++)
+            {
+                if( blobs[i].area > 7000){
+
+                    printf("label %d | area %d \n", blobs[i].label, blobs[i].area);
+
+                    //circular ?
+                    circularidade= 4.00 * M_PI * blobs->area/(blobs->perimeter*blobs->perimeter);
+                    printf("circularidade: %f\n", circularidade);
+                    //TODO: melhorar a verificação para nao enganhar com o stop
+                    if(circularidade > 0.22){
+                        printf("É um sentido proibido");
+                        str = std::string("SENTIDO PROIBIDO");
+                        cv::putText(frame, str, cv::Point(blobs->x, blobs->y - 20), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 0, 255), 2);
+                        cv::putText(frame, str, cv::Point(blobs->x, blobs->y - 20), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 0, 255), 1);
+
+                    }else{
+                        str = std::string("STOP");
+                        cv::putText(frame, str, cv::Point(blobs->x, blobs->y - 20), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 0, 255), 2);
+                        cv::putText(frame, str, cv::Point(blobs->x, blobs->y - 20), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 0, 255), 1);
+
+                    }
 
 
+                    // Draw a rectangle around the object
+                    // and its top left corner...
+                    cv::Point pt1(blobs->x, blobs->y);
+                    // and its bottom right corner.
+                    cv::Point pt2(blobs->x + blobs->width, blobs->y + blobs->height);
+                    // These two calls...
+                    cv::rectangle(frame, pt1, pt2, cv::Scalar(0, 0, 255),5);
+                }
+            }
             free(blobs);
         }
 
 
-        //printf("n de labels: %d \n" , nlabels );
-
-
-
         //converter no final e amostrar e para dar debug ao segment
-        //vc_convertToThreeChannels(image2,image3);
+        //vc_convertToThreeChannels(imageBlue,image3);
 		//memcpy(frame.data, image3->data, video.width * video.height * 3);
 
 		/* Exibe a frame */
@@ -175,7 +249,6 @@ int main(void) {
 	}
 	// Liberta a mem�ria da imagem IVC que havia sido criada
 	vc_image_free(image);
-	vc_image_free(image2);
 	vc_image_free(image3);
 	vc_image_free(image4);
 
