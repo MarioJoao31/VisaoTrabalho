@@ -91,3 +91,5 @@ int vc_gray_edge_prewitt(IVC *src, IVC *dst, float th);
 
 //converter bgr para rgb
 IVC* vc_convert_to_rgb(IVC *src);
+//converter os pretos para brancos
+IVC* vc_convert_whites(IVC *image);

@@ -1596,54 +1596,6 @@ int vc_gray_edge_prewitt(IVC *src, IVC *dst, float th) // th = [0.001, 1.000]
 
 	return 1;
 }
-/*
-int vc_convertToThreeChannels(IVC *graysrc,IVC *graydst) {
-    //verificações
-    if (!graysrc || !graysrc->data || !graydst || !graydst->data) {
-        return -1; // Invalid parameters
-    }
-
-    if (graysrc->channels != 1) {
-        return -2; // Input image should have only one channel
-    }
-
-    if (graydst->channels != 3) {
-        return -3; // Output image should have three channels
-    }
-
-    if (graysrc->width != graydst->width || graysrc->height != graydst->height) {
-        return -4; // Input and output images should have the same size
-    }
-
-    // Copy image header information
-    graydst->width = graysrc->width;
-    graydst->height = graysrc->height;
-    graydst->channels = 3;
-    graydst->levels = graysrc->levels;
-    graydst->bytesperline = 3 * graysrc->width;
-    graydst->data = (unsigned char*) malloc(graydst->channels * graydst->width * graydst->height * sizeof(unsigned char));
-
-    //BUG: muda as cores se eu passar como paramentro vermelho ele muda para reconhecer azul
-
-    // Copiar os valores de pixel da imagem em escala de cinza para cada um dos três canais da nova imagem
-    for (int i = 0; i < graysrc->height; i++) {
-        for (int j = 0; j < graysrc->width; j++) {
-            int binary_idx = i * graysrc->bytesperline + j / 8;
-            int binary_bit = 7 - j % 8;  // Invert bit order because of endianness
-            int color_idx = i * graydst->bytesperline + j * graydst->channels;
-
-            unsigned char binary_value = (graysrc->data[binary_idx] >> binary_bit) & 0x01;
-            unsigned char color_value = binary_value * 255;
-
-            graydst->data[color_idx] = color_value;
-            graydst->data[color_idx + 1] = color_value;
-            graydst->data[color_idx + 2] = color_value;
-        }
-    }
-
-    return 1;
-}
- */
 
 int vc_convertToThreeChannels(IVC* binary_image, IVC* color_image) {
     int i, j;
@@ -1688,6 +1640,27 @@ IVC* vc_convert_to_rgb(IVC *image){
             unsigned char blue = data[index];
             data[index] = data[index + 2];
             data[index + 2] = blue;
+        }
+    }
+    return image;
+}
+
+IVC* vc_convert_whites(IVC *image){
+    unsigned char* data = image->data;
+    int width = image->width;
+    int height = image->height;
+    int channels = image->channels;
+    int bytesperline = image->bytesperline;
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            int index = y * bytesperline + x * channels;
+
+            if(data[index] == 255)
+                data[index]= 0;
+            else
+                data[index]= 255;
+
         }
     }
     return image;

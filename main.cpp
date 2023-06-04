@@ -82,13 +82,11 @@ int main(void) {
 
  	//TODO: por aqui a criar a imagem para ter mais framerate
 	IVC *image = vc_image_new(video.width, video.height, 3, 255);
-    IVC *imageTempBlue = vc_image_new(video.width, video.height, 1, 255);
     IVC *imageBlue = vc_image_new(video.width, video.height, 1, 255);
     IVC *imageRed = vc_image_new(video.width, video.height, 1, 255);
-    IVC *imageGreen = vc_image_new(video.width, video.height, 1, 255);
+    //blob
     IVC *imageBlobsBlue = vc_image_new(video.width, video.height, 1, 255);
     IVC *imageBlobsRed = vc_image_new(video.width, video.height, 1, 255);
-    IVC *imagetemp2 = vc_image_new(video.width, video.height, 1, 255);
     IVC *image3 = vc_image_new(video.width, video.height, 3, 255);
     IVC *image4 = vc_image_new(video.width, video.height, 3, 255);
     int nblobs = 0;
@@ -118,7 +116,7 @@ int main(void) {
 		cv::putText(frame, str, cv::Point(20, 75), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 0, 0), 2);
 		cv::putText(frame, str, cv::Point(20, 75), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 255, 255), 1);
 
-
+        //copiar para obter frame
 		memcpy(image->data, frame.data, video.width * video.height * 3);
         //converte o frame q esta em bgr para rgb
         vc_convert_to_rgb(image);
@@ -126,10 +124,21 @@ int main(void) {
         /////////////////////AZUL
         //teste faz o segment de algumas cores
 		vc_hsv_segmentation(image, imageBlue, 200,240,70,100,70,100);
-        //vc_binary_open(imageTempBlue,imageBlue,7,2);
         //faz o blob labeling
         blobs = vc_binary_blob_labelling(imageBlue,imageBlobsBlue, &nblobs);
+
+
+
+        // Initialize counters for white pixels in left and right halves
+        //varaiveis para a seta
+        int leftBlackCount = 0;
+        int rightBlackCount = 0;
+        int downBlackCount = 0;
+        int topBlackCount = 0;
+
+        //variavel para cirularidade
         float circularidade = 0.000;
+
         if (blobs != NULL){
             //da a informação das blobs
             vc_binary_blob_info(imageBlobsBlue,blobs, nblobs);
@@ -140,10 +149,6 @@ int main(void) {
 
                     printf("label %d | area %d \n", blobs[i].label, blobs[i].area);
 
-                    str = std::string(" !!! AZUL !!! ");
-                    cv::putText(frame, str, cv::Point(blobs->x, blobs->y - 20), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 0, 0), 2);
-                    cv::putText(frame, str, cv::Point(blobs->x, blobs->y - 20), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 0, 0), 1);
-
                     //circular ?
                     circularidade= 4.00 * M_PI * blobs->area/(blobs->perimeter*blobs->perimeter);
                     printf("circularidade: %f\n", circularidade);
@@ -151,24 +156,149 @@ int main(void) {
                         //TODO: falta fazer a verificação do centro de massa
                         printf("É UM CIRCULO AZULL!!!\n");
 
-                        int imageCenterX = blobs->width / 2;
-                        int imageCenterY = blobs->height / 2;
-                        printf("xc:%d\n", blobs->xc);
-                        printf("yc:%d\n", blobs->yc);
-                        printf("imageCenterX:%d\n", imageCenterX);
-                        printf("imageCenterY:%d\n", imageCenterY);
-                        /*
-                        int imageCenterX = blobs->width / 2;
-                        if (blobs->xc > imageCenterX) {
-                            printf("Image is to the left\n");
-                        } else if (blobs->xc < imageCenterX) {
-                            printf("Image is to right\n");
-                        } else {
-                            printf("Image is in the center!\n");
+
+                        //calcula a metade da imagem
+                        int divisionPoint = blobs->x + blobs->width / 2;
+
+                        // Iterate over the blob's region and count white pixels in each half
+                        for (int j = blobs->y; j < blobs->y + blobs->height; j++) {
+                            for (int i = blobs->x; i < blobs->x + blobs->width; i++) {
+                                unsigned char *pixel = imageBlobsBlue->data + (j * imageBlobsBlue->bytesperline) + (i * imageBlobsBlue->channels);
+
+                                // Check if the pixel is white (assuming white is represented by 255)
+                                if (pixel[0] == 0) {
+                                    if (i < divisionPoint) {
+                                        // Pixel is in the left half
+                                        leftBlackCount++;
+                                    } else {
+                                        // Pixel is in the right half
+                                        rightBlackCount++;
+                                    }
+                                }
+                            }
                         }
-                        */
+
+                        // Compare white pixel counts and determine which part has more white pixels
+                        if (leftBlackCount > rightBlackCount) {
+                            str = std::string(" !!! SINAL SETA ESQUERDA !!! ");
+                            cv::putText(frame, str, cv::Point(blobs->x, blobs->y - 20), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 0, 0), 2);
+                            cv::putText(frame, str, cv::Point(blobs->x, blobs->y - 20), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 0, 0), 1);
+
+                            // Left half has more white pixels
+                            printf("Left half has more white pixels.\n");
+                        } else if (leftBlackCount < rightBlackCount) {
+                            // Right half has more white pixels
+                            str = std::string(" !!!  SINAL SETA DIREITA !!! ");
+                            cv::putText(frame, str, cv::Point(blobs->x, blobs->y - 20), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 0, 0), 2);
+                            cv::putText(frame, str, cv::Point(blobs->x, blobs->y - 20), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 0, 0), 1);
+
+                            printf("Right half has more white pixels.\n");
+                        } else {
+                            // Both halves have an equal number of white pixels
+                            printf("Both halves have an equal number of white pixels.\n");
+                        }
 
                     }
+
+/*
+                    //comparar quantidade de preto na parte de baixo
+                    //calcula a metade da imagem no x
+                    int divisionPointheight = blobs->y + blobs->height / 2;
+
+                    // Iterate over the blob's region and count white pixels in each half
+                    for (int j = blobs->y; j < blobs->y + blobs->height; j++) {
+                        for (int i = blobs->x; i < blobs->x + blobs->width; i++) {
+                            unsigned char *pixel = imageBlobsBlue->data + (j * imageBlobsBlue->bytesperline) + (i * imageBlobsBlue->channels);
+
+                            // cheka se é preto
+                            if (pixel[0] == 0) {
+                                if (j < divisionPointheight) {
+                                    // Pixel is in the left half
+                                    topBlackCount++;
+                                } else {
+                                    // Pixel is in the right half
+                                    downBlackCount++;
+                                }
+                            }
+                        }
+                    }
+                    printf("pixeis pretos na parte de cima %d \n", topBlackCount);
+                    printf("pixeis pretos na parte de baixo %d \n", downBlackCount);
+                    // Compare white pixel counts and determine which part has more white pixels
+                    if (topBlackCount > downBlackCount) {
+                        str = std::string(" !!! Mais preto em cima !!! ");
+                        cv::putText(frame, str, cv::Point(blobs->x, blobs->y - 20), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 0, 0), 2);
+                        cv::putText(frame, str, cv::Point(blobs->x, blobs->y - 20), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 0, 0), 1);
+
+                        // Left half has more white pixels
+                        printf("Parte de cima tem mais preto.\n");
+                    } else if (topBlackCount < downBlackCount) {
+                        // Right half has more white pixels
+                        str = std::string(" !!!  Mais preto em baixo !!! ");
+                        cv::putText(frame, str, cv::Point(blobs->x, blobs->y - 20), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 0, 0), 2);
+                        cv::putText(frame, str, cv::Point(blobs->x, blobs->y - 20), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 0, 0), 1);
+
+                        printf("Parte de baixo tem mais preto.\n");
+                    } else {
+                        // Both halves have an equal number of white pixels
+                        printf("Ambas as partes tem pretos iguais.\n");
+                    }
+
+ */
+
+
+                    int topHalfBlackCount = 0;
+                    int topArea = 0;
+                    int totalArea = blobs->width * (blobs->height / 2);  // Total area of the top half
+
+// Calculate the division point in the y-axis
+                    int divisionPoint = blobs->y + blobs->height / 2;
+
+// Iterate over the blob's region and count black pixels in the top half
+                    for (int j = blobs->y; j < blobs->y + blobs->height; j++) {
+                        for (int i = blobs->x; i < blobs->x + blobs->width; i++) {
+                            unsigned char *pixel = imageBlobsBlue->data + (j * imageBlobsBlue->bytesperline) + (i * imageBlobsBlue->channels);
+
+                            // Check if the pixel is black
+                            if (pixel[0] == 0) {
+                                if (j < divisionPoint) {
+                                    // Pixel is in the top half
+                                    topHalfBlackCount++;
+                                }
+                            }
+                        }
+                    }
+
+                    // Calculate the relative area of the top half
+                    topArea = topHalfBlackCount * 100 / totalArea;
+
+            // Print the results
+                    printf("Number of black pixels in the top half: %d\n", topHalfBlackCount);
+                    printf("Relative area of the top half: %d%%\n", topArea);
+
+                    if(topArea < 30){
+                        printf("É AUTOESTRADA FILHO DA PUTA ");
+                    }else{
+                        printf("É UM CARRO O SEU BOI FILHO DA PUTA ");
+
+                    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                     // Draw a rectangle around the object
                     // and its top left corner...
                     cv::Point pt1(blobs->x, blobs->y);
@@ -235,7 +365,6 @@ int main(void) {
             }
             free(blobs);
         }
-
 
         //converter no final e amostrar e para dar debug ao segment
         //vc_convertToThreeChannels(imageBlue,image3);
