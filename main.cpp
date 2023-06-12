@@ -82,11 +82,13 @@ int main(void) {
 
  	//TODO: por aqui a criar a imagem para ter mais framerate
 	IVC *image = vc_image_new(video.width, video.height, 3, 255);
+    //imagem de cor segmentadas
     IVC *imageBlue = vc_image_new(video.width, video.height, 1, 255);
     IVC *imageRed = vc_image_new(video.width, video.height, 1, 255);
     //blob
     IVC *imageBlobsBlue = vc_image_new(video.width, video.height, 1, 255);
     IVC *imageBlobsRed = vc_image_new(video.width, video.height, 1, 255);
+    //imagem resultado
     IVC *image3 = vc_image_new(video.width, video.height, 3, 255);
     IVC *image4 = vc_image_new(video.width, video.height, 3, 255);
     int nblobs = 0;
@@ -116,25 +118,23 @@ int main(void) {
 		cv::putText(frame, str, cv::Point(20, 75), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 0, 0), 2);
 		cv::putText(frame, str, cv::Point(20, 75), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 255, 255), 1);
 
-        //copiar para obter frame
+        //copiar para obter imagem do frame
 		memcpy(image->data, frame.data, video.width * video.height * 3);
         //converte o frame q esta em bgr para rgb
         vc_convert_to_rgb(image);
 
         /////////////////////AZUL
-        //teste faz o segment de algumas cores
+        //Faz a segmentação da parte com a cor predefinida nos parametros
 		vc_hsv_segmentation(image, imageBlue, 200,240,70,100,70,100);
+
         //faz o blob labeling
+        //fizemos optimizações com os iguais e para n estourar quando tiver mais de 255 labels
         blobs = vc_binary_blob_labelling(imageBlue,imageBlobsBlue, &nblobs);
-
-
 
         // Initialize counters for white pixels in left and right halves
         //varaiveis para a seta
         int leftBlackCount = 0;
         int rightBlackCount = 0;
-        int downBlackCount = 0;
-        int topBlackCount = 0;
 
         //variavel para cirularidade
         float circularidade = 0.000;
@@ -143,13 +143,15 @@ int main(void) {
             //da a informação das blobs
             vc_binary_blob_info(imageBlobsBlue,blobs, nblobs);
 
+            //ciclo para ver todos os blobs
             for (size_t i = 0; i < nblobs; i++)
             {
+                //ver so blobs grandes
                 if( blobs[i].area > 7000){
 
                     printf("label %d | area %d \n", blobs[i].label, blobs[i].area);
 
-                    //circular ?
+                    //circular
                     circularidade= 4.00 * M_PI * blobs->area/(blobs->perimeter*blobs->perimeter);
                     printf("circularidade: %f\n", circularidade);
                     if(circularidade > 0.20){
@@ -162,9 +164,10 @@ int main(void) {
                         // Iterate over the blob's region and count white pixels in each half
                         for (int j = blobs->y; j < blobs->y + blobs->height; j++) {
                             for (int i = blobs->x; i < blobs->x + blobs->width; i++) {
+                                //posição dentro do blob
                                 unsigned char *pixel = imageBlobsBlue->data + (j * imageBlobsBlue->bytesperline) + (i * imageBlobsBlue->channels);
 
-                                // Check if the pixel is white (assuming white is represented by 255)
+                                // ve se o pixel esta preto
                                 if (pixel[0] == 0) {
                                     if (i < divisionPoint) {
                                         // Pixel is in the left half
@@ -202,10 +205,10 @@ int main(void) {
                         int topArea = 0;
                         int totalArea = blobs->width * (blobs->height / 2);  // Total area of the top half
 
-// Calculate the division point in the y-axis
+                        // Calculate the division point in the y-axis
                         int divisionPoint = blobs->y + blobs->height / 2;
 
-// Iterate over the blob's region and count black pixels in the top half
+                        // Iterate over the blob's region and count black pixels in the top half
                         for (int j = blobs->y; j < blobs->y + blobs->height; j++) {
                             for (int i = blobs->x; i < blobs->x + blobs->width; i++) {
                                 unsigned char *pixel = imageBlobsBlue->data + (j * imageBlobsBlue->bytesperline) + (i * imageBlobsBlue->channels);
@@ -227,6 +230,7 @@ int main(void) {
                         printf("Number of black pixels in the top half: %d\n", topHalfBlackCount);
                         printf("Relative area of the top half: %d%%\n", topArea);
 
+                        //compra a quantidade de pontos pretos em relação ao tamanho da imagem
                         if(topArea > 50){
                             printf("É AUTOESTRADA ");
                             str = std::string(" !!!  É AUTOESTRADA !!! ");
@@ -243,9 +247,7 @@ int main(void) {
                         }
                     }
 
-
-
-
+                    //codigo para fazer o quadrado
 
                     // Draw a rectangle around the object
                     // and its top left corner...
