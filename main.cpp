@@ -153,7 +153,6 @@ int main(void) {
                     circularidade= 4.00 * M_PI * blobs->area/(blobs->perimeter*blobs->perimeter);
                     printf("circularidade: %f\n", circularidade);
                     if(circularidade > 0.20){
-                        //TODO: falta fazer a verificação do centro de massa
                         printf("É UM CIRCULO AZULL!!!\n");
 
 
@@ -185,115 +184,64 @@ int main(void) {
                             cv::putText(frame, str, cv::Point(blobs->x, blobs->y - 20), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 0, 0), 1);
 
                             // Left half has more white pixels
-                            printf("Left half has more white pixels.\n");
+                            printf("Lado esquerdo tem mais pixeis pretos.\n");
                         } else if (leftBlackCount < rightBlackCount) {
                             // Right half has more white pixels
                             str = std::string(" !!!  SINAL SETA DIREITA !!! ");
                             cv::putText(frame, str, cv::Point(blobs->x, blobs->y - 20), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 0, 0), 2);
                             cv::putText(frame, str, cv::Point(blobs->x, blobs->y - 20), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 0, 0), 1);
 
-                            printf("Right half has more white pixels.\n");
+                            printf("Lado Direito tem mais pixeis pretos.\n");
                         } else {
                             // Both halves have an equal number of white pixels
                             printf("Both halves have an equal number of white pixels.\n");
                         }
 
-                    }
-
-/*
-                    //comparar quantidade de preto na parte de baixo
-                    //calcula a metade da imagem no x
-                    int divisionPointheight = blobs->y + blobs->height / 2;
-
-                    // Iterate over the blob's region and count white pixels in each half
-                    for (int j = blobs->y; j < blobs->y + blobs->height; j++) {
-                        for (int i = blobs->x; i < blobs->x + blobs->width; i++) {
-                            unsigned char *pixel = imageBlobsBlue->data + (j * imageBlobsBlue->bytesperline) + (i * imageBlobsBlue->channels);
-
-                            // cheka se é preto
-                            if (pixel[0] == 0) {
-                                if (j < divisionPointheight) {
-                                    // Pixel is in the left half
-                                    topBlackCount++;
-                                } else {
-                                    // Pixel is in the right half
-                                    downBlackCount++;
-                                }
-                            }
-                        }
-                    }
-                    printf("pixeis pretos na parte de cima %d \n", topBlackCount);
-                    printf("pixeis pretos na parte de baixo %d \n", downBlackCount);
-                    // Compare white pixel counts and determine which part has more white pixels
-                    if (topBlackCount > downBlackCount) {
-                        str = std::string(" !!! Mais preto em cima !!! ");
-                        cv::putText(frame, str, cv::Point(blobs->x, blobs->y - 20), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 0, 0), 2);
-                        cv::putText(frame, str, cv::Point(blobs->x, blobs->y - 20), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 0, 0), 1);
-
-                        // Left half has more white pixels
-                        printf("Parte de cima tem mais preto.\n");
-                    } else if (topBlackCount < downBlackCount) {
-                        // Right half has more white pixels
-                        str = std::string(" !!!  Mais preto em baixo !!! ");
-                        cv::putText(frame, str, cv::Point(blobs->x, blobs->y - 20), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 0, 0), 2);
-                        cv::putText(frame, str, cv::Point(blobs->x, blobs->y - 20), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 0, 0), 1);
-
-                        printf("Parte de baixo tem mais preto.\n");
-                    } else {
-                        // Both halves have an equal number of white pixels
-                        printf("Ambas as partes tem pretos iguais.\n");
-                    }
-
- */
-
-
-                    int topHalfBlackCount = 0;
-                    int topArea = 0;
-                    int totalArea = blobs->width * (blobs->height / 2);  // Total area of the top half
+                    }else{
+                        int topHalfBlackCount = 0;
+                        int topArea = 0;
+                        int totalArea = blobs->width * (blobs->height / 2);  // Total area of the top half
 
 // Calculate the division point in the y-axis
-                    int divisionPoint = blobs->y + blobs->height / 2;
+                        int divisionPoint = blobs->y + blobs->height / 2;
 
 // Iterate over the blob's region and count black pixels in the top half
-                    for (int j = blobs->y; j < blobs->y + blobs->height; j++) {
-                        for (int i = blobs->x; i < blobs->x + blobs->width; i++) {
-                            unsigned char *pixel = imageBlobsBlue->data + (j * imageBlobsBlue->bytesperline) + (i * imageBlobsBlue->channels);
+                        for (int j = blobs->y; j < blobs->y + blobs->height; j++) {
+                            for (int i = blobs->x; i < blobs->x + blobs->width; i++) {
+                                unsigned char *pixel = imageBlobsBlue->data + (j * imageBlobsBlue->bytesperline) + (i * imageBlobsBlue->channels);
 
-                            // Check if the pixel is black
-                            if (pixel[0] == 0) {
-                                if (j < divisionPoint) {
-                                    // Pixel is in the top half
-                                    topHalfBlackCount++;
+                                // Check if the pixel is black
+                                if (pixel[0] == 0) {
+                                    if (j > divisionPoint) {
+                                        // Pixel is in the top half
+                                        topHalfBlackCount++;
+                                    }
                                 }
                             }
                         }
+
+                        // Calculate the relative area of the top half
+                        topArea = topHalfBlackCount * 100 / totalArea;
+
+                        // Print the results
+                        printf("Number of black pixels in the top half: %d\n", topHalfBlackCount);
+                        printf("Relative area of the top half: %d%%\n", topArea);
+
+                        if(topArea > 50){
+                            printf("É AUTOESTRADA ");
+                            str = std::string(" !!!  É AUTOESTRADA !!! ");
+                            cv::putText(frame, str, cv::Point(blobs->x, blobs->y - 20), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 0, 0), 2);
+                            cv::putText(frame, str, cv::Point(blobs->x, blobs->y - 20), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 0, 0), 1);
+
+                        }else{
+                            printf("É UM CARRO ");
+                            str = std::string(" !!!  É UM CARRO !!! ");
+                            cv::putText(frame, str, cv::Point(blobs->x, blobs->y - 20), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 0, 0), 2);
+                            cv::putText(frame, str, cv::Point(blobs->x, blobs->y - 20), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 0, 0), 1);
+
+
+                        }
                     }
-
-                    // Calculate the relative area of the top half
-                    topArea = topHalfBlackCount * 100 / totalArea;
-
-            // Print the results
-                    printf("Number of black pixels in the top half: %d\n", topHalfBlackCount);
-                    printf("Relative area of the top half: %d%%\n", topArea);
-
-                    if(topArea < 30){
-                        printf("É AUTOESTRADA FILHO DA PUTA ");
-                    }else{
-                        printf("É UM CARRO O SEU BOI FILHO DA PUTA ");
-
-                    }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -306,7 +254,6 @@ int main(void) {
                     cv::Point pt2(blobs->x + blobs->width, blobs->y + blobs->height);
                     // These two calls...
                     cv::rectangle(frame, pt1, pt2, cv::Scalar(255, 0, 0),5);
-
                     // Draw a rectangle around the center of mass
                     // and its top left corner...
                     cv::Point pt3(blobs->xc, blobs->yc);
@@ -339,7 +286,6 @@ int main(void) {
                     //circular ?
                     circularidade= 4.00 * M_PI * blobs->area/(blobs->perimeter*blobs->perimeter);
                     printf("circularidade: %f\n", circularidade);
-                    //TODO: melhorar a verificação para nao enganhar com o stop
                     if(circularidade > 0.22){
                         printf("É um sentido proibido");
                         str = std::string("SENTIDO PROIBIDO");
